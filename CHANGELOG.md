@@ -6,6 +6,7 @@
 - Ajout du flux Google OAuth, de la session serveur et de la logique d'essai unique.
 - Retrait des anciens scripts locaux de deploiement OVH/SFTP et des assets obsoletes.
 - Ajout d'une licence source available avec permission ecrite obligatoire.
+- Remplacement de la licence maison par la licence connue PolyForm Strict 1.0.0.
 - Mise a jour du README pour documenter les variables serveur sans exposer de secret.
 
 ## 2026-06-19
