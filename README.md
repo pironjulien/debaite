@@ -44,6 +44,6 @@ The `.htaccess` file blocks runtime/private files and applies a strict Content S
 
 ## License
 
-Licensed under the PolyForm Strict License 1.0.0.
+Licensed under the GNU Affero General Public License v3.0.
 
-Commercial use, distribution, modifications, derivative works, hosted deployments, or any use outside the license require a separate written permission from Julien Piron.
+This is a strong copyleft license: if you modify Debaite and run it as a network service, you must make the corresponding source code available under the same license.
