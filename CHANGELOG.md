@@ -2,6 +2,7 @@
 
 ## 2026-06-19 - Publication-ready source
 
+- Ajout d'une politique de securite, de Dependabot et d'un scan GitHub Actions Gitleaks/TruffleHog hebdomadaire.
 - Resynchronisation du depot autonome avec la version vivante de `julienpiron.fr/debaite`.
 - Ajout du flux Google OAuth, de la session serveur et de la logique d'essai unique.
 - Retrait des anciens scripts locaux de deploiement OVH/SFTP et des assets obsoletes.
