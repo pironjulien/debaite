@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEBAITE - Cinematic Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="state-home">
+
+  <!-- Travelling Procédural SOTA sur Image Haute Rez (remplace 404 Video) -->
+  <div class="master-bg-pan">
+    <div class="bg-vfx"></div>
+    <div class="video-overlay"></div>
+  </div>
+
+  <!-- Header 3 Secteurs -->
+  <header class="app-header">
+    <div class="header-col-left">
+      <div class="logo">DEB<span class="hl-ai">AI</span>TE</div>
+    </div>
+    <div class="header-col-center">
+      <div class="play-controls">
+        <button class="btn btn-primary" id="btn-resume" type="button" hidden>REPRISE</button>
+        <button class="btn btn-danger" id="btn-stop" type="button">STOP</button>
+        <button class="btn btn-secondary" id="btn-restart" type="button">EFFACER</button>
+        <button class="btn btn-secondary" id="btn-print" type="button" disabled>IMPRIMER</button>
+      </div>
+    </div>
+    <div class="header-col-right" aria-hidden="true"></div>
+  </header>
+
+  <!-- Orateurs Massifiés (Giant Size) -->
+  <div class="orator-hero orator-left" id="avatar-a">
+    <div class="orator-ring"><img src="bienveillant.webp" alt="Orator A" /></div>
+  </div>
+  <div class="orator-hero orator-right" id="avatar-b">
+    <div class="orator-ring"><img src="malveillant.webp" alt="Orator B" /></div>
+  </div>
+
+  <!-- CANVAS ÉCLAIR PROCÉDURAL (Vraie animation électrique codée) -->
+  <canvas id="lightning-canvas" width="400" height="300"></canvas>
+
+  <!-- Input central Abaissé -->
+  <div class="home-interaction">
+    <div class="prompt-access-row">
+      <div class="access-panel" id="access-panel" aria-live="polite">
+        <div class="access-status">
+          <span class="access-dot" id="access-dot"></span>
+          <span id="access-label">Vérification...</span>
+        </div>
+        <a class="google-button" id="access-login" href="api/google/start" hidden>
+          <span class="google-mark" aria-hidden="true">
+            <svg class="google-icon" viewBox="0 0 18 18" focusable="false">
+              <path fill="#4285F4" d="M17.64 9.2045c0-.6382-.0573-1.2527-.1636-1.8409H9v3.4818h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2582h2.9086c1.7018-1.5677 2.6837-3.8741 2.6837-6.6155z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.4673-.8059 5.9564-2.18l-2.9086-2.2582c-.8059.54-1.8368.8591-3.0478.8591-2.3441 0-4.3282-1.5832-5.036-3.7109H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z"/>
+              <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2827-1.1168-.2827-1.71s.1027-1.17.2827-1.71V4.9582H.9573C.3477 6.1732 0 7.5477 0 9s.3477 2.8268.9573 4.0418L3.964 10.71z"/>
+              <path fill="#EA4335" d="M9 3.5791c1.3214 0 2.5077.4541 3.4405 1.3459l2.5814-2.5814C13.4632.8918 11.4259 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5791 9 3.5791z"/>
+            </svg>
+          </span>
+          <span id="access-login-label">Continuer avec Google</span>
+        </a>
+        <a class="access-link" id="access-contact" href="https://twitter.com/julienpironfr" target="_blank" rel="noopener" hidden>Contact</a>
+        <button class="access-link access-button" id="access-logout" type="button" hidden>Sortir</button>
+      </div>
+    </div>
+    <input type="text" id="subject" class="massive-input" placeholder="Sujet du débat..." autocomplete="off"/>
+    <div class="helper-text">Collisions cognitives entre deux paradigmes divergents.</div>
+  </div>
+
+  <main class="chat-arena" id="arena"></main>
+
+  <script src="script.js"></script>
+</body>
+</html>

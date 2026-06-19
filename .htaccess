@@ -1,0 +1,21 @@
+Options -Indexes
+
+RewriteEngine On
+RewriteRule ^\.runtime/ - [F,L]
+RewriteRule ^api/lib/ - [F,L]
+RewriteRule ^api/generate/?$ api/generate.php [L]
+RewriteRule ^api/session/?$ api/session.php [L]
+RewriteRule ^api/logout/?$ api/logout.php [L]
+RewriteRule ^api/google/start/?$ api/google-start.php [L]
+RewriteRule ^api/google/callback/?$ api/google-callback.php [L]
+
+<FilesMatch "^(\.env|\.htpasswd|\.runtime|deploy_sftp\.py|README\.md|CHANGELOG\.md)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://www.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;"
+</IfModule>

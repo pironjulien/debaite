@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+
+# Temp
+*.log
+*.tmp
+*.swp
+__pycache__/
+
+# Environment
+.env
+.env.*
+.htpasswd
+.runtime/
+
+# Source images (use .webp only)
+*.png
