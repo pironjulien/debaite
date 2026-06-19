@@ -44,4 +44,6 @@ The `.htaccess` file blocks runtime/private files and applies a strict Content S
 
 ## License
 
-This repository is source available, not open source. Reading and evaluation are allowed, but use, copy, modification, distribution, hosting, sale, sublicensing, AI training, or derivative work requires prior written permission from Julien Piron. See `LICENSE`.
+Licensed under the PolyForm Strict License 1.0.0.
+
+Commercial use, distribution, modifications, derivative works, hosted deployments, or any use outside the license require a separate written permission from Julien Piron.
