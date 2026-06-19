@@ -2,6 +2,7 @@
 
 ## 2026-06-19 - Publication-ready source
 
+- Resynchronisation du miroir public avec la version live : crédits, paiement, modes d'intelligence, reflet automatique, effet souris et corrections d'état sans secrets embarqués.
 - Ajout d'une CI GitHub Actions pour verifier la syntaxe JavaScript et PHP a chaque push.
 - Ajout d'une politique de securite, de Dependabot et d'un scan GitHub Actions Gitleaks/TruffleHog hebdomadaire.
 - Resynchronisation du depot autonome avec la version vivante de `julienpiron.fr/debaite`.
