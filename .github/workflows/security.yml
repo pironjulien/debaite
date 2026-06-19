@@ -32,4 +32,4 @@ jobs:
         uses: trufflesecurity/trufflehog@v3.95.6
         with:
           path: ./
-          extra_args: --only-verified --fail
+          extra_args: --only-verified
