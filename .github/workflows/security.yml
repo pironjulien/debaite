@@ -29,4 +29,7 @@ jobs:
         run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 detect --source=/repo --redact --verbose
 
       - name: TruffleHog verified secrets
-        run: docker run --rm -v "$PWD:/repo" trufflesecurity/trufflehog:v3.95.6 git file:///repo --only-verified --fail
+        uses: trufflesecurity/trufflehog@v3.95.6
+        with:
+          path: ./
+          extra_args: --only-verified --fail
