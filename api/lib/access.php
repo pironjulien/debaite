@@ -4,6 +4,13 @@ declare(strict_types=1);
 const DEBAITE_DEFAULT_TRIAL_DEBATE_LIMIT = 1;
 const DEBAITE_DEFAULT_TRIAL_STEP_LIMIT = 8;
 const DEBAITE_DEFAULT_IP_DAILY_STEP_LIMIT = 40;
+const DEBAITE_DEFAULT_CREDIT_PACK_CENTS = 99;
+const DEBAITE_DEFAULT_CREDIT_PACK_CREDITS = 200;
+const DEBAITE_DEFAULT_CREDIT_PACK_CURRENCY = 'eur';
+const DEBAITE_DEFAULT_FAST_STEP_CREDITS = 1;
+const DEBAITE_DEFAULT_THINK_STEP_CREDITS = 2;
+const DEBAITE_DEFAULT_EXPERT_STEP_CREDITS = 4;
+const DEBAITE_DEFAULT_EXPERT_THINK_STEP_CREDITS = 6;
 
 final class DebaiteAccessException extends RuntimeException
 {
@@ -179,6 +186,65 @@ function debaite_contact_url(): string
     return debaite_config_value('DEBAITE_CONTACT_URL') ?: 'https://twitter.com/julienpironfr';
 }
 
+function debaite_billing_enabled(): bool
+{
+    return debaite_config_value('DEBAITE_STRIPE_SECRET_KEY') !== ''
+        && debaite_config_value('DEBAITE_STRIPE_WEBHOOK_SECRET') !== '';
+}
+
+function debaite_credit_pack(): array
+{
+    return [
+        'amountCents' => debaite_int_config('DEBAITE_CREDIT_PACK_CENTS', DEBAITE_DEFAULT_CREDIT_PACK_CENTS, 50, 10000),
+        'credits' => debaite_int_config('DEBAITE_CREDIT_PACK_CREDITS', DEBAITE_DEFAULT_CREDIT_PACK_CREDITS, 10, 100000),
+        'currency' => strtolower(debaite_config_value('DEBAITE_CREDIT_PACK_CURRENCY') ?: DEBAITE_DEFAULT_CREDIT_PACK_CURRENCY),
+    ];
+}
+
+function debaite_generation_modes(): array
+{
+    return [
+        'fast' => [
+            'id' => 'fast',
+            'model' => 'deepseek-v4-flash',
+            'thinking' => false,
+            'reasoningEffort' => '',
+            'credits' => debaite_int_config('DEBAITE_FAST_STEP_CREDITS', DEBAITE_DEFAULT_FAST_STEP_CREDITS, 1, 100),
+            'maxTokens' => debaite_int_config('DEBAITE_FAST_MAX_TOKENS', 420, 128, 2000),
+        ],
+        'think' => [
+            'id' => 'think',
+            'model' => 'deepseek-v4-flash',
+            'thinking' => true,
+            'reasoningEffort' => 'high',
+            'credits' => debaite_int_config('DEBAITE_THINK_STEP_CREDITS', DEBAITE_DEFAULT_THINK_STEP_CREDITS, 1, 100),
+            'maxTokens' => debaite_int_config('DEBAITE_THINK_MAX_TOKENS', 520, 128, 2400),
+        ],
+        'expert' => [
+            'id' => 'expert',
+            'model' => 'deepseek-v4-pro',
+            'thinking' => false,
+            'reasoningEffort' => '',
+            'credits' => debaite_int_config('DEBAITE_EXPERT_STEP_CREDITS', DEBAITE_DEFAULT_EXPERT_STEP_CREDITS, 1, 100),
+            'maxTokens' => debaite_int_config('DEBAITE_EXPERT_MAX_TOKENS', 520, 128, 2400),
+        ],
+        'expert_think' => [
+            'id' => 'expert_think',
+            'model' => 'deepseek-v4-pro',
+            'thinking' => true,
+            'reasoningEffort' => 'high',
+            'credits' => debaite_int_config('DEBAITE_EXPERT_THINK_STEP_CREDITS', DEBAITE_DEFAULT_EXPERT_THINK_STEP_CREDITS, 1, 100),
+            'maxTokens' => debaite_int_config('DEBAITE_EXPERT_THINK_MAX_TOKENS', 620, 128, 3000),
+        ],
+    ];
+}
+
+function debaite_generation_mode(string $modeId): array
+{
+    $modes = debaite_generation_modes();
+    return $modes[$modeId] ?? $modes['fast'];
+}
+
 function debaite_access_status(): array
 {
     debaite_bootstrap();
@@ -187,18 +253,33 @@ function debaite_access_status(): array
     $authenticated = $email !== '';
     $unlimited = debaite_has_unlimited_access();
     $trial = debaite_trial_status();
+    $credits = $authenticated ? debaite_credit_balance() : 0;
+    $billingModes = [];
+    foreach (debaite_generation_modes() as $mode) {
+        $billingModes[] = [
+            'id' => $mode['id'],
+            'credits' => $mode['credits'],
+        ];
+    }
 
     return [
         'authenticated' => $authenticated,
         'email' => $email,
         'unlimited' => $unlimited,
-        'canGenerate' => $unlimited || ($authenticated && !$trial['blocked']),
+        'canGenerate' => $unlimited || ($authenticated && (!$trial['blocked'] || $credits > 0)),
         'googleEnabled' => debaite_google_enabled(),
         'loginUrl' => 'api/google/start',
         'logoutUrl' => 'api/logout',
         'contactUrl' => debaite_contact_url(),
         'csrfToken' => debaite_csrf_token(),
         'trial' => $trial,
+        'billing' => [
+            'enabled' => debaite_billing_enabled(),
+            'checkoutUrl' => 'api/checkout',
+            'credits' => $credits,
+            'pack' => debaite_credit_pack(),
+            'modes' => $billingModes,
+        ],
     ];
 }
 
@@ -254,9 +335,11 @@ function debaite_normalize_debate_id(string $debateId): string
     return $debateId;
 }
 
-function debaite_require_generation_access(string $debateId): array
+function debaite_require_generation_access(string $debateId, string $modeId = 'fast', ?array &$reservation = null): array
 {
     debaite_require_csrf();
+    $mode = debaite_generation_mode($modeId);
+    $reservation = null;
 
     if (debaite_has_unlimited_access()) {
         return debaite_access_status();
@@ -268,8 +351,152 @@ function debaite_require_generation_access(string $debateId): array
         throw new DebaiteAccessException('google_required', 'Connexion Google requise pour tester Debaite.');
     }
 
-    debaite_reserve_public_step($debateId);
+    if ($mode['id'] === 'fast' && !debaite_trial_status()['blocked']) {
+        debaite_reserve_public_step($debateId);
+        return debaite_access_status();
+    }
+
+    $reservation = debaite_reserve_paid_credits($mode);
     return debaite_access_status();
+}
+
+function debaite_credit_balance(?string $identity = null): int
+{
+    $identity = $identity ?: debaite_public_identity_hash();
+    $data = debaite_read_usage_store();
+    $record = is_string($identity) ? ($data['identities'][$identity] ?? []) : [];
+    return max(0, (int)($record['credits'] ?? 0));
+}
+
+function debaite_reserve_paid_credits(array $mode): array
+{
+    $identity = debaite_public_identity_hash();
+    $cost = max(1, (int)($mode['credits'] ?? 1));
+    $reservationId = bin2hex(random_bytes(12));
+
+    debaite_mutate_usage_store(function (array $data) use ($identity, $cost, $mode, $reservationId): array {
+        $now = gmdate('c');
+        $data['version'] = 1;
+        $data['identities'] = $data['identities'] ?? [];
+
+        $record = $data['identities'][$identity] ?? ['firstSeen' => $now];
+        $balance = max(0, (int)($record['credits'] ?? 0));
+        if ($balance < $cost) {
+            throw new DebaiteAccessException('credits_required', 'Crédits insuffisants pour ce mode.');
+        }
+
+        $record['credits'] = $balance - $cost;
+        $record['creditsSpent'] = max(0, (int)($record['creditsSpent'] ?? 0)) + $cost;
+        $record['lastSeen'] = $now;
+        $record['creditTransactions'] = debaite_append_credit_transaction($record['creditTransactions'] ?? [], [
+            'id' => $reservationId,
+            'type' => 'debit',
+            'mode' => (string)($mode['id'] ?? 'fast'),
+            'credits' => $cost,
+            'createdAt' => $now,
+        ]);
+
+        $data['identities'][$identity] = $record;
+        return $data;
+    });
+
+    return [
+        'id' => $reservationId,
+        'type' => 'credits',
+        'identity' => $identity,
+        'credits' => $cost,
+        'mode' => (string)($mode['id'] ?? 'fast'),
+    ];
+}
+
+function debaite_refund_paid_credits(?array $reservation): void
+{
+    if (!$reservation || ($reservation['type'] ?? '') !== 'credits') {
+        return;
+    }
+
+    $identity = (string)($reservation['identity'] ?? '');
+    $reservationId = (string)($reservation['id'] ?? '');
+    $credits = max(0, (int)($reservation['credits'] ?? 0));
+    if (!preg_match('/^[a-f0-9]{64}$/', $identity) || $reservationId === '' || $credits <= 0) {
+        return;
+    }
+
+    debaite_mutate_usage_store(function (array $data) use ($identity, $reservationId, $credits): array {
+        $now = gmdate('c');
+        $data['version'] = 1;
+        $data['identities'] = $data['identities'] ?? [];
+        $record = $data['identities'][$identity] ?? ['firstSeen' => $now];
+        $refunds = $record['creditRefunds'] ?? [];
+        if (isset($refunds[$reservationId])) {
+            return $data;
+        }
+
+        $record['credits'] = max(0, (int)($record['credits'] ?? 0)) + $credits;
+        $record['creditsSpent'] = max(0, (int)($record['creditsSpent'] ?? 0) - $credits);
+        $refunds[$reservationId] = ['credits' => $credits, 'createdAt' => $now];
+        $record['creditRefunds'] = $refunds;
+        $record['creditTransactions'] = debaite_append_credit_transaction($record['creditTransactions'] ?? [], [
+            'id' => $reservationId . ':refund',
+            'type' => 'refund',
+            'credits' => $credits,
+            'createdAt' => $now,
+        ]);
+
+        $data['identities'][$identity] = $record;
+        return $data;
+    });
+}
+
+function debaite_grant_credit_purchase(string $identity, int $credits, string $purchaseId, int $amountCents, string $currency): bool
+{
+    if (!preg_match('/^[a-f0-9]{64}$/', $identity) || $credits <= 0 || $purchaseId === '') {
+        return false;
+    }
+
+    $applied = false;
+    debaite_mutate_usage_store(function (array $data) use ($identity, $credits, $purchaseId, $amountCents, $currency, &$applied): array {
+        $now = gmdate('c');
+        $data['version'] = 1;
+        $data['identities'] = $data['identities'] ?? [];
+
+        $record = $data['identities'][$identity] ?? ['firstSeen' => $now];
+        $purchases = $record['creditPurchases'] ?? [];
+        if (isset($purchases[$purchaseId])) {
+            return $data;
+        }
+
+        $record['credits'] = max(0, (int)($record['credits'] ?? 0)) + $credits;
+        $record['creditsPurchased'] = max(0, (int)($record['creditsPurchased'] ?? 0)) + $credits;
+        $record['lastSeen'] = $now;
+        $purchases[$purchaseId] = [
+            'credits' => $credits,
+            'amountCents' => $amountCents,
+            'currency' => strtolower($currency),
+            'createdAt' => $now,
+        ];
+        $record['creditPurchases'] = $purchases;
+        $record['creditTransactions'] = debaite_append_credit_transaction($record['creditTransactions'] ?? [], [
+            'id' => $purchaseId,
+            'type' => 'credit',
+            'credits' => $credits,
+            'amountCents' => $amountCents,
+            'currency' => strtolower($currency),
+            'createdAt' => $now,
+        ]);
+
+        $data['identities'][$identity] = $record;
+        $applied = true;
+        return $data;
+    });
+
+    return $applied;
+}
+
+function debaite_append_credit_transaction(array $transactions, array $transaction): array
+{
+    $transactions[] = $transaction;
+    return array_slice($transactions, -80);
 }
 
 function debaite_reserve_public_step(string $debateId): void

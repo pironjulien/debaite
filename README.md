@@ -9,10 +9,11 @@ Live demo: https://julienpiron.fr/debaite/
 - Static frontend: `index.html`, `style.css`, `script.js`
 - PHP API relay: `api/generate.php`
 - Google OAuth access flow: `api/google-start.php`, `api/google-callback.php`, `api/session.php`, `api/logout.php`
-- Access and trial logic: `api/lib/access.php`
+- Credit checkout and webhook flow: `api/checkout.php`, `api/stripe-webhook.php`
+- Access, trial, credit, and mode-cost logic: `api/lib/access.php`
 - WebP visual assets used by the live interface
 
-No API key, OAuth secret, password, deployment credential, runtime database, or local environment file is included.
+No API key, OAuth secret, Stripe secret, password, deployment credential, runtime database, or local environment file is included.
 
 ## Required runtime configuration
 
@@ -25,14 +26,23 @@ DEBAITE_GOOGLE_CLIENT_ID=
 DEBAITE_GOOGLE_CLIENT_SECRET=
 DEBAITE_GOOGLE_ALLOWED_EMAILS=
 DEBAITE_GOOGLE_REDIRECT_URI=
+DEBAITE_STRIPE_SECRET_KEY=
+DEBAITE_STRIPE_WEBHOOK_SECRET=
 ```
 
-Optional limits:
+Optional access, pricing, and model limits:
 
 ```env
 DEBAITE_TRIAL_DEBATE_LIMIT=1
 DEBAITE_TRIAL_STEP_LIMIT=8
 DEBAITE_PUBLIC_IP_DAILY_STEP_LIMIT=40
+DEBAITE_CREDIT_PACK_CENTS=99
+DEBAITE_CREDIT_PACK_CREDITS=200
+DEBAITE_CREDIT_PACK_CURRENCY=eur
+DEBAITE_FAST_STEP_CREDITS=1
+DEBAITE_THINK_STEP_CREDITS=2
+DEBAITE_EXPERT_STEP_CREDITS=4
+DEBAITE_EXPERT_THINK_STEP_CREDITS=6
 DEBAITE_CONTACT_URL=https://twitter.com/julienpironfr
 ```
 

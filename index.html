@@ -30,7 +30,11 @@
         <button class="btn btn-secondary" id="btn-print" type="button" disabled>IMPRIMER</button>
       </div>
     </div>
-    <div class="header-col-right" aria-hidden="true"></div>
+    <div class="header-col-right">
+      <a class="site-logo-link" href="/" aria-label="Retour à julienpiron.fr">
+        <img src="../img/julienpiron-96.webp" alt="Julien Piron" width="48" height="48" decoding="async">
+      </a>
+    </div>
   </header>
 
   <!-- Orateurs Massifiés (Giant Size) -->
@@ -43,6 +47,7 @@
 
   <!-- CANVAS ÉCLAIR PROCÉDURAL (Vraie animation électrique codée) -->
   <canvas id="lightning-canvas" width="400" height="300"></canvas>
+  <canvas id="mouse-vfx-canvas" aria-hidden="true"></canvas>
 
   <!-- Input central Abaissé -->
   <div class="home-interaction">
@@ -64,11 +69,27 @@
           <span id="access-login-label">Continuer avec Google</span>
         </a>
         <a class="access-link" id="access-contact" href="https://twitter.com/julienpironfr" target="_blank" rel="noopener" hidden>Contact</a>
-        <button class="access-link access-button" id="access-logout" type="button" hidden>Sortir</button>
+        <button class="access-link access-button credit-button" id="access-buy" type="button" hidden>200 crédits · 0,99 €</button>
+        <button class="access-link access-button logout-button" id="access-logout" type="button" hidden>
+          <span class="google-mark google-mark-compact" aria-hidden="true">
+            <svg class="google-icon" viewBox="0 0 18 18" focusable="false">
+              <path fill="#4285F4" d="M17.64 9.2045c0-.6382-.0573-1.2527-.1636-1.8409H9v3.4818h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2582h2.9086c1.7018-1.5677 2.6837-3.8741 2.6837-6.6155z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.4673-.8059 5.9564-2.18l-2.9086-2.2582c-.8059.54-1.8368.8591-3.0478.8591-2.3441 0-4.3282-1.5832-5.036-3.7109H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z"/>
+              <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2827-1.1168-.2827-1.71s.1027-1.17.2827-1.71V4.9582H.9573C.3477 6.1732 0 7.5477 0 9s.3477 2.8268.9573 4.0418L3.964 10.71z"/>
+              <path fill="#EA4335" d="M9 3.5791c1.3214 0 2.5077.4541 3.4405 1.3459l2.5814-2.5814C13.4632.8918 11.4259 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5791 9 3.5791z"/>
+            </svg>
+          </span>
+          <span id="access-logout-label">Sortir</span>
+        </button>
       </div>
     </div>
+    <div class="mode-row" id="mode-row" hidden aria-label="Mode de débat">
+      <button class="mode-option" type="button" data-mode="fast">Rapide</button>
+      <button class="mode-option" type="button" data-mode="think">Réflexion</button>
+      <button class="mode-option" type="button" data-mode="expert">Expert</button>
+      <button class="mode-option" type="button" data-mode="expert_think">Expert+</button>
+    </div>
     <input type="text" id="subject" class="massive-input" placeholder="Sujet du débat..." autocomplete="off"/>
-    <div class="helper-text">Collisions cognitives entre deux paradigmes divergents.</div>
   </div>
 
   <main class="chat-arena" id="arena"></main>

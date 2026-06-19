@@ -10,8 +10,10 @@ let debateRunId = 0;
 let currentDebateId = "";
 
 const ACCESS_STATUS_URL = "api/session";
+const CHECKOUT_URL = "api/checkout";
 const ACCESS_DEVICE_KEY = "debaiteDeviceId";
 const ACCESS_DEBATE_KEY = "debaiteTrialDebateId";
+const ACCESS_MODE_KEY = "debaiteGenerationMode";
 
 const UI_STRINGS = {
   fr: {
@@ -22,24 +24,43 @@ const UI_STRINGS = {
     logout: "Se déconnecter",
     contact: "Contact",
     googleButton: "Continuer avec Google",
+    buyCredits: "Acheter {count} crédits · {amount}",
+    billingSetup: "Paiement à activer",
+    buyingCredits: "Ouverture...",
     verifying: "Vérification...",
     subjectPlaceholder: "Sujet du débat...",
     unavailablePlaceholder: "Connexion Google requise",
+    noCreditsPlaceholder: "Aucun crédit disponible",
     helperDefault: "Collisions cognitives entre deux paradigmes divergents.",
     helperUnlimited: "Accès illimité validé.",
     helperTrial: "Un débat d’essai est disponible avec ce compte Google.",
-    helperTrialUsed: "Ce compte Google a déjà utilisé son essai.",
+    helperTrialWithBuy: "Essai rapide disponible. Les modes avancés utilisent des crédits.",
+    helperCredits: "Crédits disponibles pour continuer les débats.",
+    helperTrialUsed: "Aucun crédit disponible.",
+    helperCreditsRequired: "Aucun crédit disponible.",
+    helperBillingConfig: "Paiement bientôt disponible.",
     helperGoogleConfig: "Connexion Google requise avant ouverture publique.",
     helperGoogleRequired: "Connectez-vous avec Google pour lancer l’essai unique.",
     unlimitedAccess: "Accès illimité",
     googleTrial: "Essai Google · 1 débat",
+    creditsAccess: "{count} crédits disponibles",
+    trialAndCredits: "{count} crédits · essai 1 débat",
     trialUsed: "Essai déjà utilisé",
+    noCredits: "Crédits épuisés",
     googleConfig: "Google à configurer",
     googleRequired: "Connexion Google requise",
     googleDisabled: "Google n’est pas encore configuré.",
     googleDenied: "Ce compte Google n’est pas autorisé.",
     googleError: "Connexion Google impossible.",
     googleOk: "Connexion Google validée.",
+    paymentOk: "Paiement reçu. Les crédits arrivent après confirmation Stripe.",
+    paymentCancel: "Paiement annulé.",
+    modeFast: "Rapide",
+    modeThink: "Réflexion",
+    modeExpert: "Expert",
+    modeExpertThink: "Expert+",
+    modeCredit: "{count} cr",
+    modeUnavailable: "Crédits insuffisants",
     printEmpty: "Aucune conversation à imprimer.",
     phaseIntro: "INTRODUCTION",
     phaseArgument: "ARGUMENTATION",
@@ -58,24 +79,43 @@ const UI_STRINGS = {
     logout: "Sign out",
     contact: "Contact",
     googleButton: "Continue with Google",
+    buyCredits: "Buy {count} credits · {amount}",
+    billingSetup: "Payment setup",
+    buyingCredits: "Opening...",
     verifying: "Checking...",
     subjectPlaceholder: "Debate topic...",
     unavailablePlaceholder: "Google sign-in required",
+    noCreditsPlaceholder: "No credits available",
     helperDefault: "Cognitive collision between two divergent paradigms.",
     helperUnlimited: "Unlimited access confirmed.",
     helperTrial: "One trial debate is available with this Google account.",
-    helperTrialUsed: "This Google account has already used its trial.",
+    helperTrialWithBuy: "Fast trial available. Advanced modes use credits.",
+    helperCredits: "Credits available to continue debating.",
+    helperTrialUsed: "No credits available.",
+    helperCreditsRequired: "No credits available.",
+    helperBillingConfig: "Payment will be available soon.",
     helperGoogleConfig: "Google sign-in must be configured before public launch.",
     helperGoogleRequired: "Sign in with Google to launch the one-time trial.",
     unlimitedAccess: "Unlimited access",
     googleTrial: "Google trial · 1 debate",
+    creditsAccess: "{count} credits available",
+    trialAndCredits: "{count} credits · 1 trial debate",
     trialUsed: "Trial already used",
+    noCredits: "No credits",
     googleConfig: "Google setup required",
     googleRequired: "Google sign-in required",
     googleDisabled: "Google is not configured yet.",
     googleDenied: "This Google account is not authorized.",
     googleError: "Google sign-in failed.",
     googleOk: "Google sign-in confirmed.",
+    paymentOk: "Payment received. Credits arrive after Stripe confirms it.",
+    paymentCancel: "Payment cancelled.",
+    modeFast: "Fast",
+    modeThink: "Reflection",
+    modeExpert: "Expert",
+    modeExpertThink: "Expert+",
+    modeCredit: "{count} cr",
+    modeUnavailable: "Not enough credits",
     printEmpty: "No conversation to print.",
     phaseIntro: "INTRODUCTION",
     phaseArgument: "ARGUMENT",
@@ -98,6 +138,20 @@ function resolveUiLanguage() {
 function t(key) {
   return UI_STRINGS[uiLanguage]?.[key] || UI_STRINGS.fr[key] || key;
 }
+
+function tf(key, values = {}) {
+  return Object.entries(values).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+    t(key)
+  );
+}
+
+const MODE_LABEL_KEYS = {
+  fast: "modeFast",
+  think: "modeThink",
+  expert: "modeExpert",
+  expert_think: "modeExpertThink"
+};
 
 function bindConversationActions() {
   const actions = {
@@ -173,6 +227,135 @@ function initLightning() {
 
     megaLightningTrigger = false; // consume trigger
   }
+  drawFrame();
+}
+
+function initMouseVfx() {
+  const canvas = document.getElementById("mouse-vfx-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let width = 0;
+  let height = 0;
+  const mouse = { x: -100, y: -100 };
+  const particles = [];
+  const stardust = [];
+
+  function resize() {
+    const ratio = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.max(1, Math.floor(width * ratio));
+    canvas.height = Math.max(1, Math.floor(height * ratio));
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    particles.length = 0;
+    const count = Math.min(89, Math.max(24, Math.floor((width * height) / 18000)));
+    for (let i = 0; i < count; i += 1) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.38,
+        vy: (Math.random() - 0.5) * 0.38,
+        size: Math.random() * 1.6,
+        alpha: 0.25 + Math.random() * 0.55
+      });
+    }
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+  window.addEventListener("mousemove", (event) => {
+    mouse.x = event.clientX;
+    mouse.y = event.clientY;
+    for (let i = 0; i < 3; i += 1) {
+      stardust.push({
+        x: mouse.x + (Math.random() - 0.5) * 12,
+        y: mouse.y + (Math.random() - 0.5) * 12,
+        vx: (Math.random() - 0.5) * 0.55,
+        vy: (Math.random() - 0.5) * 0.55,
+        size: 0.8 + Math.random() * 2.2,
+        alpha: 1,
+        decay: 0.018 + Math.random() * 0.026
+      });
+    }
+    if (stardust.length > 140) stardust.splice(0, stardust.length - 140);
+  }, { passive: true });
+
+  function drawFrame() {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "rgba(3, 5, 9, 0.18)";
+    ctx.fillRect(0, 0, width, height);
+
+    for (const particle of particles) {
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      if (particle.x < 0) particle.x = width;
+      if (particle.x > width) particle.x = 0;
+      if (particle.y < 0) particle.y = height;
+      if (particle.y > height) particle.y = 0;
+    }
+
+    ctx.globalCompositeOperation = "lighter";
+    const glow = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 210);
+    glow.addColorStop(0, "rgba(83, 255, 244, 0.22)");
+    glow.addColorStop(0.42, "rgba(83, 255, 244, 0.09)");
+    glow.addColorStop(1, "transparent");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 210, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#53fff4";
+    for (const particle of particles) {
+      ctx.globalAlpha = particle.alpha * 0.45;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (let i = stardust.length - 1; i >= 0; i -= 1) {
+      const dust = stardust[i];
+      dust.x += dust.vx;
+      dust.y += dust.vy;
+      dust.alpha -= dust.decay;
+      if (dust.alpha <= 0) {
+        stardust.splice(i, 1);
+        continue;
+      }
+      ctx.globalAlpha = dust.alpha;
+      ctx.fillStyle = i % 3 === 0 ? "#bc13fe" : "#53fff4";
+      ctx.beginPath();
+      ctx.arc(dust.x, dust.y, dust.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(83, 255, 244, 0.065)";
+    ctx.beginPath();
+    for (let i = 0; i < particles.length; i += 1) {
+      for (let j = i + 1; j < particles.length; j += 1) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        if ((dx * dx) + (dy * dy) < 7921) {
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+        }
+      }
+
+      const mouseDx = particles[i].x - mouse.x;
+      const mouseDy = particles[i].y - mouse.y;
+      if ((mouseDx * mouseDx) + (mouseDy * mouseDy) < 14400) {
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(mouse.x, mouse.y);
+      }
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(drawFrame);
+  }
+
+  resize();
   drawFrame();
 }
 
@@ -271,6 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyStaticTranslations();
   bindConversationActions();
   initLightning();
+  initMouseVfx();
   initAvatarsSwarm();
   initAccess();
   updateConversationActions();
@@ -287,7 +471,7 @@ function applyStaticTranslations() {
     "btn-stop": "stop",
     "btn-restart": "clear",
     "btn-print": "print",
-    "access-logout": "logout",
+    "access-logout-label": "logout",
     "access-contact": "contact",
     "access-login-label": "googleButton",
     "access-label": "verifying"
@@ -302,6 +486,7 @@ function applyStaticTranslations() {
   if (input) input.placeholder = t("subjectPlaceholder");
   const helper = document.querySelector(".helper-text");
   if (helper) helper.textContent = t("helperDefault");
+  updateModeOptions();
 }
 
 async function initAccess() {
@@ -310,10 +495,75 @@ async function initAccess() {
   if (logout) {
     logout.addEventListener("click", logoutAccess);
   }
+  const buy = document.getElementById("access-buy");
+  if (buy) {
+    buy.addEventListener("click", startCheckout);
+  }
+  document.querySelectorAll("[data-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      setSelectedMode(button.dataset.mode || "fast");
+      updateModeUI();
+    });
+  });
 
   await refreshAccessStatus();
   setHomeInputEnabled(Boolean(accessState?.canGenerate));
   showAuthResultFromUrl();
+}
+
+function getSelectedMode() {
+  try {
+    const stored = localStorage.getItem(ACCESS_MODE_KEY);
+    if (MODE_LABEL_KEYS[stored]) return stored;
+  } catch {}
+  return "fast";
+}
+
+function setSelectedMode(mode) {
+  const normalized = MODE_LABEL_KEYS[mode] ? mode : "fast";
+  try {
+    localStorage.setItem(ACCESS_MODE_KEY, normalized);
+  } catch {}
+}
+
+function getModeCost(mode) {
+  const serverMode = accessState?.billing?.modes?.find((item) => item.id === mode);
+  return Math.max(1, Number(serverMode?.credits || 1));
+}
+
+function canUseMode(mode) {
+  if (accessState?.unlimited) return true;
+  const credits = Math.max(0, Number(accessState?.billing?.credits || 0));
+  if (credits >= getModeCost(mode)) return true;
+  return mode === "fast" && !accessState?.trial?.blocked;
+}
+
+function updateModeOptions() {
+  const locked = isDebating || !accessState?.canGenerate;
+  document.querySelectorAll("[data-mode]").forEach((button) => {
+    const mode = button.dataset.mode || "fast";
+    const label = t(MODE_LABEL_KEYS[mode] || "modeFast");
+    const cost = getModeCost(mode);
+    button.textContent = `${label} · ${tf("modeCredit", { count: cost })}`;
+    button.disabled = accessState ? locked || !canUseMode(mode) : false;
+    button.classList.toggle("is-active", mode === getSelectedMode());
+  });
+}
+
+function updateModeUI() {
+  updateModeOptions();
+  const row = document.getElementById("mode-row");
+  if (!row) return;
+
+  const selected = getSelectedMode();
+  if (!canUseMode(selected)) {
+    setSelectedMode("fast");
+  }
+
+  row.hidden = !accessState?.authenticated;
+  row.classList.toggle("is-locked", isDebating || !accessState?.canGenerate);
+  updateModeOptions();
 }
 
 function getDeviceId() {
@@ -381,14 +631,54 @@ async function logoutAccess() {
   }
 }
 
+async function startCheckout() {
+  const button = document.getElementById("access-buy");
+  if (!accessState?.authenticated || !accessState?.billing?.enabled || !accessState?.csrfToken) {
+    updateAccessUI();
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = t("buyingCredits");
+  }
+
+  try {
+    const response = await fetch(CHECKOUT_URL, {
+      method: "POST",
+      headers: accessHeaders()
+    });
+    const data = await response.json().catch(() => null);
+    if (data?.access) {
+      accessState = data.access;
+      updateAccessUI();
+    }
+    if (!response.ok || !data?.url) {
+      throw new Error((data && data.error) ? data.error : t("helperBillingConfig"));
+    }
+    window.location.assign(data.url);
+  } catch (error) {
+    const helper = document.querySelector(".helper-text");
+    if (helper) helper.textContent = error.message || t("helperBillingConfig");
+    if (button) {
+      button.disabled = false;
+      button.textContent = packLabel();
+    }
+  }
+}
+
 function updateAccessUI() {
   const panel = document.getElementById("access-panel");
   const label = document.getElementById("access-label");
   const login = document.getElementById("access-login");
   const contact = document.getElementById("access-contact");
+  const buy = document.getElementById("access-buy");
   const logout = document.getElementById("access-logout");
   const helper = document.querySelector(".helper-text");
   if (!panel || !label) return;
+
+  const billing = accessState?.billing || {};
+  const credits = Math.max(0, Number(billing.credits || 0));
 
   document.body.classList.toggle("access-blocked", !accessState?.canGenerate);
   document.body.classList.toggle("access-ready", Boolean(accessState?.canGenerate));
@@ -400,10 +690,16 @@ function updateAccessUI() {
     if (helper) helper.textContent = t("helperUnlimited");
   } else if (accessState?.authenticated) {
     panel.dataset.state = accessState?.canGenerate ? "trial" : "blocked";
-    label.textContent = accessState?.canGenerate ? t("googleTrial") : t("trialUsed");
-    if (helper) helper.textContent = accessState?.canGenerate
-      ? t("helperTrial")
-      : t("helperTrialUsed");
+    if (credits > 0) {
+      label.textContent = tf("creditsAccess", { count: credits });
+      if (helper) helper.textContent = t("helperCredits");
+    } else if (accessState?.canGenerate) {
+      label.textContent = tf("trialAndCredits", { count: credits });
+      if (helper) helper.textContent = billing.enabled ? t("helperTrialWithBuy") : t("helperTrial");
+    } else {
+      label.textContent = `${tf("creditsAccess", { count: credits })} · ${billing.enabled ? t("noCredits") : t("trialUsed")}`;
+      if (helper) helper.textContent = billing.enabled ? t("helperCreditsRequired") : t("helperTrialUsed");
+    }
   } else if (accessState?.canGenerate) {
     panel.dataset.state = "trial";
     label.textContent = t("googleTrial");
@@ -423,26 +719,54 @@ function updateAccessUI() {
   }
   if (contact) {
     contact.href = accessState?.contactUrl || "https://twitter.com/julienpironfr";
-    contact.hidden = Boolean(accessState?.canGenerate) || (accessState?.googleEnabled && !accessState?.authenticated);
+    contact.hidden = Boolean(accessState?.canGenerate)
+      || (Boolean(billing.enabled) && Boolean(accessState?.authenticated))
+      || (accessState?.googleEnabled && !accessState?.authenticated);
+  }
+  if (buy) {
+    buy.textContent = billing.enabled ? packLabel() : t("billingSetup");
+    buy.hidden = !accessState?.authenticated || accessState?.unlimited;
+    buy.disabled = !billing.enabled;
   }
   if (logout) {
     logout.hidden = !accessState?.authenticated;
   }
+  setHomeInputEnabled(Boolean(accessState?.canGenerate));
+  updateModeUI();
+}
+
+function packLabel() {
+  const pack = accessState?.billing?.pack || {};
+  const credits = Math.max(0, Number(pack.credits || 200));
+  const cents = Math.max(0, Number(pack.amountCents || 99));
+  const amount = (cents / 100).toLocaleString(uiLanguage === "fr" ? "fr-FR" : "en-US", {
+    style: "currency",
+    currency: (pack.currency || "eur").toUpperCase()
+  });
+  return tf("buyCredits", { count: credits, amount });
 }
 
 function setHomeInputEnabled(enabled) {
   const input = document.getElementById("subject");
   if (!input || isDebating) return;
   input.disabled = !enabled;
-  input.placeholder = enabled ? t("subjectPlaceholder") : t("unavailablePlaceholder");
+  input.placeholder = enabled ? t("subjectPlaceholder") : blockedInputPlaceholder();
   document.body.classList.toggle("prompt-ready", Boolean(enabled));
   input.closest(".home-interaction")?.classList.toggle("is-unlocked", Boolean(enabled));
+}
+
+function blockedInputPlaceholder() {
+  if (accessState?.authenticated) {
+    return t("noCreditsPlaceholder");
+  }
+  return t("unavailablePlaceholder");
 }
 
 function showAuthResultFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const auth = params.get("auth");
-  if (!auth) return;
+  const payment = params.get("payment");
+  if (!auth && !payment) return;
 
   const messages = {
     "google-disabled": t("googleDisabled"),
@@ -451,7 +775,9 @@ function showAuthResultFromUrl() {
     "google-ok": t("googleOk")
   };
   const helper = document.querySelector(".helper-text");
-  if (messages[auth] && helper) helper.textContent = messages[auth];
+  if (auth && auth !== "google-ok" && messages[auth] && helper) helper.textContent = messages[auth];
+  if (payment === "success" && helper) helper.textContent = t("paymentOk");
+  if (payment === "cancel" && helper) helper.textContent = t("paymentCancel");
   history.replaceState({}, "", window.location.pathname);
 }
 
@@ -554,6 +880,7 @@ function resetApp() {
 function lockUI() {
   isDebating = true;
   document.getElementById("subject").disabled = true;
+  updateModeUI();
   setNodeHidden("btn-stop", false);
   setNodeHidden("btn-resume", true);
   document.getElementById("btn-stop").disabled = false;
@@ -563,6 +890,7 @@ function lockUI() {
 function unlockUI() {
   isDebating = false;
   document.getElementById("btn-restart").disabled = false;
+  updateModeUI();
 }
 
 function updateConversationActions() {
@@ -586,6 +914,10 @@ async function startDebate() {
     await refreshAccessStatus();
   }
   if (!accessState?.canGenerate) {
+    updateAccessUI();
+    return;
+  }
+  if (!canUseMode(getSelectedMode())) {
     updateAccessUI();
     return;
   }
@@ -706,7 +1038,8 @@ async function generateWithRetry(systemInstruction, promptText, signal) {
     body: JSON.stringify({
       systemInstruction,
       prompt: promptText,
-      debateId: currentDebateId || ensureTrialDebateId()
+      debateId: currentDebateId || ensureTrialDebateId(),
+      mode: getSelectedMode()
     })
   });
 

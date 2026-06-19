@@ -26,13 +26,20 @@ if (!is_array($payload)) {
 $systemInstruction = trim((string)($payload['systemInstruction'] ?? ''));
 $prompt = trim((string)($payload['prompt'] ?? ''));
 $debateId = trim((string)($payload['debateId'] ?? ''));
+$mode = debaite_generation_mode(trim((string)($payload['mode'] ?? 'fast')));
 
 if ($systemInstruction === '' || $prompt === '') {
     debaite_send_json(400, ['error' => 'Instruction système ou prompt manquant.']);
 }
 
+$apiKey = debaite_config_value('DEEPSEEK_API_KEY');
+if ($apiKey === '') {
+    debaite_send_json(503, ['error' => 'Configuration IA absente.', 'access' => debaite_access_status()]);
+}
+
+$reservation = null;
 try {
-    $access = debaite_require_generation_access($debateId);
+    $access = debaite_require_generation_access($debateId, $mode['id'], $reservation);
 } catch (DebaiteAccessException $error) {
     debaite_send_json(403, [
         'error' => $error->getMessage(),
@@ -46,32 +53,32 @@ try {
     ]);
 }
 
-$apiKey = debaite_config_value('DEEPSEEK_API_KEY');
-if ($apiKey === '') {
-    debaite_send_json(503, ['error' => 'Configuration IA absente.', 'access' => debaite_access_status()]);
-}
-
-$model = debaite_config_value('DEEPSEEK_MODEL') ?: DEFAULT_DEEPSEEK_MODEL;
 $requestBody = [
-    'model' => $model,
+    'model' => $mode['model'] ?: DEFAULT_DEEPSEEK_MODEL,
     'messages' => [
         ['role' => 'system', 'content' => $systemInstruction],
         ['role' => 'user', 'content' => $prompt],
     ],
-    'thinking' => ['type' => 'disabled'],
-    'temperature' => 0.8,
-    'max_tokens' => 2000,
+    'thinking' => ['type' => $mode['thinking'] ? 'enabled' : 'disabled'],
+    'max_tokens' => $mode['maxTokens'],
     'stream' => false,
 ];
+if ($mode['thinking']) {
+    $requestBody['reasoning_effort'] = $mode['reasoningEffort'] ?: 'high';
+} else {
+    $requestBody['temperature'] = 0.8;
+}
 
 try {
     [$status, $responseBody] = deepseek_request($apiKey, $requestBody);
 } catch (RuntimeException $error) {
+    debaite_refund_paid_credits($reservation);
     debaite_send_json(502, ['error' => $error->getMessage(), 'access' => debaite_access_status()]);
 }
 
 $response = json_decode($responseBody, true);
 if ($status < 200 || $status >= 300) {
+    debaite_refund_paid_credits($reservation);
     debaite_send_json(502, ['error' => upstream_error($response), 'access' => debaite_access_status()]);
 }
 
