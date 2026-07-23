@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-23
+
+- Passage des mises à jour GitHub Actions de Dependabot à un rythme mensuel,
+  regroupées dans une seule PR au maximum.
+
 ## 2026-06-19 - Publication-ready source
 
 - Resynchronisation du miroir public avec la version live : crédits, paiement, modes d'intelligence, reflet automatique, effet souris et corrections d'état sans secrets embarqués.
