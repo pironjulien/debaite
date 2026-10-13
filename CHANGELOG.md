@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-14 — Automatisations GitHub allégées
+
+- Mises à jour Dependabot automatiques retirées (`.github/dependabot.yml`) ; les alertes de faille
+  GitHub restent actives.
+
 ## 2026-07-23
 
 - Passage des mises à jour GitHub Actions de Dependabot à un rythme mensuel,
