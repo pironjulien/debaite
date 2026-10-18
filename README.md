@@ -1,8 +1,26 @@
 # Debaite
 
-Debaite is a cinematic AI debate arena: one prompt, two opposing voices, one structured contradiction engine.
+**A cinematic AI debate arena: one prompt, two opposing voices, one structured contradiction engine.**
+
+[![Live demo](https://img.shields.io/badge/live%20demo-julienpiron.fr%2Fdebaite-53fff4)](https://julienpiron.fr/debaite/)
+[![PHP 8](https://img.shields.io/badge/PHP-8-777BB4?logo=php&logoColor=white)](#run-it-locally)
+[![License](https://img.shields.io/github/license/pironjulien/debaite)](LICENSE)
+
+![Debaite arena: two AI speakers face each other, the thesis on the left and the counter-argument on the right](docs/assets/debaite-arena.webp)
+
+Pick a topic, follow two AI speakers as they confront arguments and counter-arguments, then print the synthesis.
+Built to help students write stronger essays by seeing the best case for both sides.
 
 Live demo: https://julienpiron.fr/debaite/
+
+## Run it locally
+
+```bash
+php -S localhost:8000
+```
+
+Then open http://localhost:8000. The interface loads without configuration; debates need the runtime values below in a
+local `.env` file (never committed).
 
 ## What is included
 
