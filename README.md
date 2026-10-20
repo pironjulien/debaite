@@ -5,6 +5,7 @@
 [![Live demo](https://img.shields.io/badge/live%20demo-julienpiron.fr%2Fdebaite-53fff4)](https://julienpiron.fr/debaite/)
 [![PHP 8](https://img.shields.io/badge/PHP-8-777BB4?logo=php&logoColor=white)](#run-it-locally)
 [![License](https://img.shields.io/github/license/pironjulien/debaite)](LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/pironjulien/debaite/badge)](https://scorecard.dev/viewer/?uri=github.com/pironjulien/debaite)
 
 ![Debaite arena: two AI speakers face each other, the thesis on the left and the counter-argument on the right](docs/assets/debaite-arena.webp)
 

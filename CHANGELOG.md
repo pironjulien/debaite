@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-20 — Chaîne d'approvisionnement GitHub
+
+- Actions GitHub épinglées par empreinte (SHA + version en commentaire), checkout sans identifiants persistés ;
+  zizmor sans trouvaille moyenne ni haute.
+- Dependabot rétabli avec un délai de 7 jours (cooldown) et un regroupement des mises à jour : GitHub Actions.
+- Workflow OpenSSF Scorecard et badge dans le README.
+- `test.ps1` : contrôle local hors ligne (syntaxe JavaScript et PHP, comme la CI).
+
 ## 2026-10-14 — Automatisations GitHub allégées
 
 - Mises à jour Dependabot automatiques retirées (`.github/dependabot.yml`) ; les alertes de faille
