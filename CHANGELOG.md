@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-28 — Politique de sécurité
+
+- `SECURITY.md` : signalement privé par GitHub, délais de réponse et de correction, publication en avis de sécurité.
+
 ## 2026-10-20 — Chaîne d'approvisionnement GitHub
 
 - Actions GitHub épinglées par empreinte (SHA + version en commentaire), checkout sans identifiants persistés ;
