@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31 — Retrait de Scorecard et CodeQL
+
+- OpenSSF Scorecard (workflow et badge du README) et l'analyse CodeQL de GitHub retirés. Restent les contrôles de la CI et Dependabot.
+
 ## 2026-10-28 — Politique de sécurité
 
 - `SECURITY.md` : signalement privé par GitHub, délais de réponse et de correction, publication en avis de sécurité.
