@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31 — Retour de Scorecard et CodeQL
+
+- Le soir même, OpenSSF Scorecard (workflow et badge du README) et l'analyse CodeQL de GitHub (configuration par défaut) sont rétablis et restent actifs.
+
 ## 2026-10-31 — Retrait de Scorecard et CodeQL
 
 - OpenSSF Scorecard (workflow et badge du README) et l'analyse CodeQL de GitHub retirés. Restent les contrôles de la CI et Dependabot.
